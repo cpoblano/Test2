@@ -79,7 +79,7 @@ canvas {
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
             if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
         }
-         function draw() {
+         function drawPlayer() {
             // Clear the canvas from the previous frame
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -91,7 +91,7 @@ canvas {
         // 6. Main game loop running at ~60 frames per second
         function gameLoop() {
             update();
-            draw();
+            drawPlayer();
             requestAnimationFrame(gameLoop);
         }
 
