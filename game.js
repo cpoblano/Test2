@@ -14,7 +14,12 @@ const player = {
     height: 30,
     speed: 5,
     vx: 0,
-    vy: 0
+    vy: 0,
+    health: 100,                    // Player health
+    maxHealth: 100,
+    attackCooldown: 0,              // Frames until next attack
+    attackRange: 50,                // Distance to hit enemies
+    attackDamage: 10                // Damage dealt per attack
 };
 
 // ===== ENEMIES ARRAY =====
@@ -23,11 +28,16 @@ const enemies = [];
 // Function to create an enemy
 function createEnemy() {
     const enemy = {
-        x: Math.random() * (canvas.width - 30),   // Random X position
-        y: Math.random() * (canvas.height - 30),  // Random Y position
+        x: Math.random() * (canvas.width - 30),
+        y: Math.random() * (canvas.height - 30),
         width: 30,
         height: 30,
-        speed: 2  // How fast they chase the player
+        speed: 2,
+        health: 30,                 // Enemy health
+        maxHealth: 30,
+        attackCooldown: 0,          // Frames until next attack
+        attackRange: 40,            // Distance to hit player
+        attackDamage: 5             // Damage dealt to player
     };
     return enemy;
 }
@@ -45,43 +55,75 @@ function checkCollision(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
-// Check if player collides with any enemy
-function checkPlayerCollisions() {
-    for (let i = 0; i < enemies.length; i++) {
-        if (checkCollision(player, enemies[i])) {
-            handleCollision(i);
-        }
-    }
+// Calculate distance between two objects
+function getDistance(obj1, obj2) {
+    const dx = obj1.x - obj2.x;
+    const dy = obj1.y - obj2.y;
+    return Math.sqrt(dx * dx + dy * dy);
 }
 
-// What happens when player touches an enemy
-function handleCollision(enemyIndex) {
-    // Remove the enemy
-    enemies.splice(enemyIndex, 1);
+// ===== PLAYER ATTACKS =====
+function playerAttack() {
+    // Check if player can attack (cooldown finished)
+    if (player.attackCooldown > 0) return;
+
+    // Loop through enemies and damage those in range
+    for (let i = 0; i < enemies.length; i++) {
+        const distance = getDistance(player, enemies[i]);
+        
+        if (distance < player.attackRange) {
+            // Enemy is in range, deal damage
+            enemies[i].health -= player.attackDamage;
+            
+            // If enemy died, remove it and spawn a new one
+            if (enemies[i].health <= 0) {
+                enemies.splice(i, 1);
+                enemies.push(createEnemy());
+            }
+        }
+    }
+
+    // Set cooldown so player can't attack every frame
+    player.attackCooldown = 20;  // 20 frames between attacks (~0.3 seconds at 60 FPS)
+}
+
+// ===== ENEMY ATTACKS =====
+function enemyAttack(enemy) {
+    // Check if enemy can attack (cooldown finished)
+    if (enemy.attackCooldown > 0) return;
+
+    const distance = getDistance(enemy, player);
     
-    // Spawn a new enemy to replace it
-    enemies.push(createEnemy());
+    // If player is in range, deal damage
+    if (distance < enemy.attackRange) {
+        player.health -= enemy.attackDamage;
+        
+        // Set cooldown
+        enemy.attackCooldown = 30;  // 30 frames between attacks
+    }
 }
 
 // ===== ENEMY AI: CHASE THE PLAYER =====
 function updateEnemyAI(enemy) {
     // Calculate the direction from enemy to player
-    const dx = player.x - enemy.x;  // Difference in X
-    const dy = player.y - enemy.y;  // Difference in Y
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
     
     // Calculate distance using Pythagorean theorem
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Normalize the direction (make it a unit vector)
-    // This prevents the enemy from moving faster diagonally
+    // Normalize the direction
     if (distance > 0) {
-        const dirX = dx / distance;  // X component of direction (-1 to 1)
-        const dirY = dy / distance;  // Y component of direction (-1 to 1)
+        const dirX = dx / distance;
+        const dirY = dy / distance;
         
         // Move enemy toward player
         enemy.x += dirX * enemy.speed;
         enemy.y += dirY * enemy.speed;
     }
+
+    // Try to attack the player
+    enemyAttack(enemy);
 }
 
 // ===== KEYBOARD INPUT =====
@@ -89,6 +131,12 @@ const keys = {};
 
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
+    
+    // Spacebar to attack
+    if (e.key === ' ') {
+        playerAttack();
+        e.preventDefault();  // Prevent page scroll
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -123,14 +171,21 @@ function update() {
     if (player.y < 0) player.y = 0;
     if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 
+    // Decrease player attack cooldown
+    if (player.attackCooldown > 0) {
+        player.attackCooldown--;
+    }
+
     // === UPDATE ENEMIES ===
     for (let enemy of enemies) {
         // Use AI to chase the player
         updateEnemyAI(enemy);
-    }
 
-    // === CHECK COLLISIONS ===
-    checkPlayerCollisions();
+        // Decrease enemy attack cooldown
+        if (enemy.attackCooldown > 0) {
+            enemy.attackCooldown--;
+        }
+    }
 }
 
 // ===== DRAW FUNCTION =====
@@ -140,30 +195,84 @@ function draw() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // === DRAW PLAYER ===
+    // Health bar background (red)
+    ctx.fillStyle = '#FF0000';
+    ctx.fillRect(player.x - 5, player.y - 15, player.width + 10, 8);
+    
+    // Health bar foreground (green)
+    const healthPercent = player.health / player.maxHealth;
+    ctx.fillStyle = '#00FF00';
+    ctx.fillRect(player.x - 5, player.y - 15, (player.width + 10) * healthPercent, 8);
+
+    // Player body
     ctx.fillStyle = '#0080FF';  // Blue
     ctx.fillRect(player.x, player.y, player.width, player.height);
     ctx.strokeStyle = '#fff';
     ctx.lineWidth = 2;
     ctx.strokeRect(player.x, player.y, player.width, player.height);
 
+    // Draw attack range (faint circle)
+    ctx.strokeStyle = 'rgba(0, 200, 255, 0.3)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.attackRange, 0, Math.PI * 2);
+    ctx.stroke();
+
     // === DRAW ENEMIES ===
     ctx.fillStyle = '#FF0000';  // Red
     for (let enemy of enemies) {
+        // Health bar background
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(enemy.x - 5, enemy.y - 15, enemy.width + 10, 8);
+        
+        // Health bar foreground
+        const enemyHealthPercent = enemy.health / enemy.maxHealth;
+        ctx.fillStyle = '#00FF00';
+        ctx.fillRect(enemy.x - 5, enemy.y - 15, (enemy.width + 10) * enemyHealthPercent, 8);
+
+        // Enemy body
+        ctx.fillStyle = '#FF0000';
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+        // Draw attack range
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.attackRange, 0, Math.PI * 2);
+        ctx.stroke();
     }
 
-    // === DRAW INFO ===
+    // === DRAW UI ===
     ctx.fillStyle = '#fff';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Enemies: ${enemies.length}`, 10, 20);
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText(`Player HP: ${Math.max(0, player.health)}/${player.maxHealth}`, 10, 25);
+    ctx.fillText(`Enemies: ${enemies.length}`, 10, 50);
+    ctx.fillText(`Press SPACEBAR to attack`, 10, 75);
+
+    // Game over text
+    if (player.health <= 0) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#FF0000';
+        ctx.font = 'bold 40px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+        
+        ctx.font = 'bold 20px Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('Refresh the page to play again', canvas.width / 2, canvas.height / 2 + 50);
+    }
 }
 
 // ===== GAME LOOP =====
 function gameLoop() {
-    update();
+    if (player.health > 0) {
+        update();
+    }
     draw();
     requestAnimationFrame(gameLoop);
 }
