@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Test</title>
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+        body {
+            background: #bbbbbb;
+        }
+canvas {
+    background: #bebebe;
+    display: block;
+    margin: 0 auto;
+}
+</style>
+    </head>
+    <body>
+        <canvas id="myCanvas" width="800" height="600"></canvas>
+
+        <script>
+            //Javascript
+          const canvas = document.getElementById("gameCanvas");
+          const ctx = canvas.getContext("2d");
+            
+                // 1. Player configuration
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height / 2 - 25,
+            width: 50,
+            height: 50,
+            speed: 5
+        };
+
+        // 2. Track which keys are currently pressed
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            w: false,
+            s: false,
+            a: false,
+            d: false
+        };
+
+        // 3. Listen for keyboard events
+        window.addEventListener("keydown", (e) => {
+            if (e.key in keys) keys[e.key] = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key in keys) keys[e.key] = false;
+        });
+
+        // 4. Update game state (movement calculation)
+        function update() {
+            // Check vertical movement (Arrow keys or WASD)
+            if (keys.ArrowUp || keys.w) {
+                player.y -= player.speed;
+            }
+            if (keys.ArrowDown || keys.s) {
+                player.y += player.speed;
+            }
+            
+            // Check horizontal movement
+            if (keys.ArrowLeft || keys.a) {
+                player.x -= player.speed;
+            }
+            if (keys.ArrowRight || keys.d) {
+                player.x += player.speed;
+            }
+                 // Simple screen boundary constraints (keeps player inside canvas)
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+        }
+
+
+
+        </script>
