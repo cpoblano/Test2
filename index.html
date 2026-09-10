@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2D HTML Player Movement</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #222;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        canvas {
+            background-color: #111;
+            border: 2px solid #555;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        // 1. Player configuration
+        const player = {
+            x: canvas.width / 2 - 25,
+            y: canvas.height / 2 - 25,
+            width: 50,
+            height: 50,
+            speed: 5
+        };
+
+        // 2. Track which keys are currently pressed
+        const keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false,
+            w: false,
+            s: false,
+            a: false,
+            d: false
+        };
+
+        // 3. Listen for keyboard events
+        window.addEventListener("keydown", (e) => {
+            if (e.key in keys) keys[e.key] = true;
+        });
+
+        window.addEventListener("keyup", (e) => {
+            if (e.key in keys) keys[e.key] = false;
+        });
+
+        // 4. Update game state (movement calculation)
+        function update() {
+            // Check vertical movement (Arrow keys or WASD)
+            if (keys.ArrowUp || keys.w) {
+                player.y -= player.speed;
+            }
+            if (keys.ArrowDown || keys.s) {
+                player.y += player.speed;
+            }
+            
+            // Check horizontal movement
+            if (keys.ArrowLeft || keys.a) {
+                player.x -= player.speed;
+            }
+            if (keys.ArrowRight || keys.d) {
+                player.x += player.speed;
+            }
+
+            // Simple screen boundary constraints (keeps player inside canvas)
+            if (player.x < 0) player.x = 0;
+            if (player.y < 0) player.y = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+        }
+
+        // 5. Draw the player and game area
+        function draw() {
+            // Clear the canvas from the previous frame
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw player square (Green)
+            ctx.fillStyle = "#4CAF50";
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        // 6. Main game loop running at ~60 frames per second
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Start the game
+        gameLoop();
+    </script>
+</body>
+</html>
