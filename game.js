@@ -18,7 +18,7 @@ const player = {
     health: 100,                    // Player health
     maxHealth: 100,
     attackCooldown: 0,              // Frames until next attack
-    attackRange: 100,                // Distance to hit enemies
+    attackRange: 80,                // Distance to hit enemies
     attackDamage: 25                // Damage dealt per attack
 };
 
