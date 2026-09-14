@@ -6,6 +6,29 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
 
+// ===== GAME STATE/STATS =====
+const gameStats = {
+    kills: 0,
+    highScore: 0,
+    gamesPlayed: 0
+};
+
+// Load saved data on startup
+function loadGameData() {
+    const savedData = localStorage.getItem('gameStats');
+    if (savedData) {
+        const loaded = JSON.parse(savedData);
+        gameStats.kills = loaded.kills || 0;
+        gameStats.highScore = loaded.highScore || 0;
+        gameStats.gamesPlayed = loaded.gamesPlayed || 0;
+    }
+}
+
+// Save game data to localStorage
+function saveGameData() {
+    localStorage.setItem('gameStats', JSON.stringify(gameStats));
+}
+
 // ===== PLAYER OBJECT =====
 const player = {
     x: canvas.width / 2,
@@ -77,6 +100,7 @@ function playerAttack() {
             
             // If enemy died, remove it and spawn a new one
             if (enemies[i].health <= 0) {
+                gameStats.kills++;  // Increment kill counter
                 enemies.splice(i, 1);
                 enemies.push(createEnemy());
             }
@@ -250,7 +274,10 @@ function draw() {
     ctx.font = 'bold 16px Arial';
     ctx.fillText(`Player HP: ${Math.max(0, player.health)}/${player.maxHealth}`, 10, 25);
     ctx.fillText(`Enemies: ${enemies.length}`, 10, 50);
-    ctx.fillText(`Press SPACEBAR to attack`, 10, 75);
+    ctx.fillText(`Kills this session: ${gameStats.kills}`, 10, 75);
+    ctx.fillText(`High Score: ${gameStats.highScore}`, 10, 100);
+    ctx.fillText(`Games Played: ${gameStats.gamesPlayed}`, 10, 125);
+    ctx.fillText(`Press SPACEBAR to attack`, 10, 150);
 
     // Game over text
     if (player.health <= 0) {
@@ -260,11 +287,22 @@ function draw() {
         ctx.fillStyle = '#FF0000';
         ctx.font = 'bold 40px Arial';
         ctx.textAlign = 'center';
-        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2);
+        ctx.fillText('GAME OVER', canvas.width / 2, canvas.height / 2 - 40);
         
         ctx.font = 'bold 20px Arial';
         ctx.fillStyle = '#fff';
-        ctx.fillText('Refresh the page to play again', canvas.width / 2, canvas.height / 2 + 50);
+        ctx.fillText(`Final Kills: ${gameStats.kills}`, canvas.width / 2, canvas.height / 2 + 20);
+        
+        // Update high score if current kills exceed it
+        if (gameStats.kills > gameStats.highScore) {
+            gameStats.highScore = gameStats.kills;
+        }
+        gameStats.gamesPlayed++;
+        
+        // Save the data
+        saveGameData();
+        
+        ctx.fillText('Refresh the page to play again', canvas.width / 2, canvas.height / 2 + 80);
     }
 }
 
@@ -276,6 +314,9 @@ function gameLoop() {
     draw();
     requestAnimationFrame(gameLoop);
 }
+
+// Load saved data before starting the game
+loadGameData();
 
 // Start the game
 gameLoop();
