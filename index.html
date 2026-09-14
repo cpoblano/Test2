@@ -27,19 +27,20 @@
         const canvas = document.getElementById("gameCanvas");
         const ctx = canvas.getContext("2d");
 
-        const player = {
-    x: canvas.width / 2,      // Starting X position (middle of screen)
-    y: canvas.height / 2,     // Starting Y position (middle of screen)
-    width: 30,                // Player width
-    height: 30,               // Player height
-    speed: 5,                 // How fast the player moves
-    vx: 0,                    // Velocity in X direction
-    vy: 0,                     // Velocity in Y direction
+// ===== PLAYER OBJECT =====
+const player = {
+    x: canvas.width / 2,
+    y: canvas.height / 2,
+    width: 30,
+    height: 30,
+    speed: 5,
+    vx: 0,
+    vy: 0,
     health: 100,                    // Player health
     maxHealth: 100,
     attackCooldown: 0,              // Frames until next attack
     attackRange: 50,                // Distance to hit enemies
-    attackDamage: 10   
+    attackDamage: 10                // Damage dealt per attack
 };
 
 // ===== ENEMIES ARRAY =====
@@ -48,16 +49,16 @@ const enemies = [];
 // Function to create an enemy
 function createEnemy() {
     const enemy = {
-        x: Math.random() * (canvas.width - 30),   // Random X position
-        y: Math.random() * (canvas.height - 30),  // Random Y position
+        x: Math.random() * (canvas.width - 30),
+        y: Math.random() * (canvas.height - 30),
         width: 30,
         height: 30,
-        speed: 2,  // How fast they chase the player
+        speed: 2,
         health: 30,                 // Enemy health
         maxHealth: 30,
         attackCooldown: 0,          // Frames until next attack
         attackRange: 40,            // Distance to hit player
-        attackDamage: 5   
+        attackDamage: 5             // Damage dealt to player
     };
     return enemy;
 }
@@ -75,6 +76,7 @@ function checkCollision(rect1, rect2) {
            rect1.y + rect1.height > rect2.y;
 }
 
+// Calculate distance between two objects
 function getDistance(obj1, obj2) {
     const dx = obj1.x - obj2.x;
     const dy = obj1.y - obj2.y;
@@ -88,7 +90,7 @@ function playerAttack() {
 
     // Loop through enemies and damage those in range
     for (let i = 0; i < enemies.length; i++) {
-         const distance = getDistance(player, enemies[i]);
+        const distance = getDistance(player, enemies[i]);
         
         if (distance < player.attackRange) {
             // Enemy is in range, deal damage
@@ -101,6 +103,7 @@ function playerAttack() {
             }
         }
     }
+
     // Set cooldown so player can't attack every frame
     player.attackCooldown = 20;  // 20 frames between attacks (~0.3 seconds at 60 FPS)
 }
@@ -124,96 +127,96 @@ function enemyAttack(enemy) {
 // ===== ENEMY AI: CHASE THE PLAYER =====
 function updateEnemyAI(enemy) {
     // Calculate the direction from enemy to player
-    const dx = player.x - enemy.x;  // Difference in X
-    const dy = player.y - enemy.y;  // Difference in Y
+    const dx = player.x - enemy.x;
+    const dy = player.y - enemy.y;
     
     // Calculate distance using Pythagorean theorem
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Normalize the direction (make it a unit vector)
-    // This prevents the enemy from moving faster diagonally
+    // Normalize the direction
     if (distance > 0) {
-        const dirX = dx / distance;  // X component of direction (-1 to 1)
-        const dirY = dy / distance;  // Y component of direction (-1 to 1)
+        const dirX = dx / distance;
+        const dirY = dy / distance;
         
         // Move enemy toward player
         enemy.x += dirX * enemy.speed;
         enemy.y += dirY * enemy.speed;
     }
-     // Try to attack the player
+
+    // Try to attack the player
     enemyAttack(enemy);
 }
 
 // ===== KEYBOARD INPUT =====
 const keys = {};
 
-// When a key is pressed, record it
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
-
-        // Spacebar to attack
+    
+    // Spacebar to attack
     if (e.key === ' ') {
         playerAttack();
         e.preventDefault();  // Prevent page scroll
     }
 });
 
-// When a key is released, forget it
 window.addEventListener('keyup', (e) => {
     keys[e.key] = false;
 });
 
-// ===== UPDATE FUNCTION (called every frame) =====
+// ===== UPDATE FUNCTION =====
 function update() {
-    // Reset velocity each frame
+    // === UPDATE PLAYER ===
     player.vx = 0;
     player.vy = 0;
 
-    // Check which keys are pressed and update velocity
     if (keys['ArrowUp'] || keys['w'] || keys['W']) {
-        player.vy = -player.speed;  // Move up
+        player.vy = -player.speed;
     }
     if (keys['ArrowDown'] || keys['s'] || keys['S']) {
-        player.vy = player.speed;   // Move down
+        player.vy = player.speed;
     }
     if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
-        player.vx = -player.speed;  // Move left
+        player.vx = -player.speed;
     }
     if (keys['ArrowRight'] || keys['d'] || keys['D']) {
-        player.vx = player.speed;   // Move right
+        player.vx = player.speed;
     }
 
-    // Update player position based on velocity
     player.x += player.vx;
     player.y += player.vy;
 
-    // Keep player inside canvas (prevent going off-screen)
+    // Keep player inside canvas
     if (player.x < 0) player.x = 0;
     if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
     if (player.y < 0) player.y = 0;
     if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 
+    // Decrease player attack cooldown
     if (player.attackCooldown > 0) {
         player.attackCooldown--;
     }
 
-       // === UPDATE ENEMIES ===
+    // === UPDATE ENEMIES ===
     for (let enemy of enemies) {
         // Use AI to chase the player
         updateEnemyAI(enemy);
+
+        // Decrease enemy attack cooldown
         if (enemy.attackCooldown > 0) {
             enemy.attackCooldown--;
         }
     }
 }
 
-// ===== DRAW FUNCTION (renders everything) =====
+// ===== DRAW FUNCTION =====
 function draw() {
-    // Clear the canvas (erase everything)
+    // Clear canvas
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Health bar background (red)
+    // === DRAW PLAYER ===
+    // Health bar background (red)
     ctx.fillStyle = '#FF0000';
     ctx.fillRect(player.x - 5, player.y - 15, player.width + 10, 8);
     
@@ -222,36 +225,50 @@ function draw() {
     ctx.fillStyle = '#00FF00';
     ctx.fillRect(player.x - 5, player.y - 15, (player.width + 10) * healthPercent, 8);
 
-    // Draw the player as a blue square
-    ctx.fillStyle = '#0080FF';
+    // Player body
+    ctx.fillStyle = '#0080FF';  // Blue
     ctx.fillRect(player.x, player.y, player.width, player.height);
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(player.x, player.y, player.width, player.height);
 
-
-    // === DRAW ENEMIES ===
-    ctx.fillStyle = '#FF0000';  // Red
-    for (let enemy of enemies) {
- // Draw attack range (faint circle)
+    // Draw attack range (faint circle)
     ctx.strokeStyle = 'rgba(0, 200, 255, 0.3)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(player.x + player.width / 2, player.y + player.height / 2, player.attackRange, 0, Math.PI * 2);
     ctx.stroke();
+
+    // === DRAW ENEMIES ===
+    ctx.fillStyle = '#FF0000';  // Red
+    for (let enemy of enemies) {
+        // Health bar background
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(enemy.x - 5, enemy.y - 15, enemy.width + 10, 8);
+        
+        // Health bar foreground
+        const enemyHealthPercent = enemy.health / enemy.maxHealth;
+        ctx.fillStyle = '#00FF00';
+        ctx.fillRect(enemy.x - 5, enemy.y - 15, (enemy.width + 10) * enemyHealthPercent, 8);
+
+        // Enemy body
+        ctx.fillStyle = '#FF0000';
         ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
         ctx.strokeStyle = '#fff';
         ctx.lineWidth = 2;
         ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
-  // Draw attack range
+
+        // Draw attack range
         ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.attackRange, 0, Math.PI * 2);
         ctx.stroke();
-        
     }
 
     // === DRAW UI ===
     ctx.fillStyle = '#fff';
- ctx.font = 'bold 16px Arial';
+    ctx.font = 'bold 16px Arial';
     ctx.fillText(`Player HP: ${Math.max(0, player.health)}/${player.maxHealth}`, 10, 25);
     ctx.fillText(`Enemies: ${enemies.length}`, 10, 50);
     ctx.fillText(`Press SPACEBAR to attack`, 10, 75);
@@ -272,14 +289,14 @@ function draw() {
     }
 }
 
+// ===== GAME LOOP =====
 function gameLoop() {
     if (player.health > 0) {
         update();
     }
-    draw();     
-    requestAnimationFrame(gameLoop);  
+    draw();
+    requestAnimationFrame(gameLoop);
 }
+
+// Start the game
 gameLoop();
-    </script>
-</body>
-</html>
