@@ -13,6 +13,9 @@ const gameStats = {
     gamesPlayed: 0
 };
 
+const SAVE_INTERVAL = 10000; // Save every 10 seconds (in milliseconds)
+let lastSaveTime = 0;
+
 // Load saved data on startup
 function loadGameData() {
     const savedData = localStorage.getItem('gameStats');
@@ -24,9 +27,15 @@ function loadGameData() {
     }
 }
 
-// Save game data to localStorage
+// Save game data to localStorage (time-based)
 function saveGameData() {
-    localStorage.setItem('gameStats', JSON.stringify(gameStats));
+    const currentTime = Date.now();
+    
+    // Only save if enough time has passed since last save
+    if (currentTime - lastSaveTime >= SAVE_INTERVAL) {
+        localStorage.setItem('gameStats', JSON.stringify(gameStats));
+        lastSaveTime = currentTime;
+    }
 }
 
 // ===== PLAYER OBJECT =====
@@ -210,6 +219,9 @@ function update() {
             enemy.attackCooldown--;
         }
     }
+
+    // Time-based save check
+    saveGameData();
 }
 
 // ===== DRAW FUNCTION =====
@@ -299,7 +311,8 @@ function draw() {
         }
         gameStats.gamesPlayed++;
         
-        // Save the data
+        // Force save when game ends
+        lastSaveTime = 0;
         saveGameData();
         
         ctx.fillText('Refresh the page to play again', canvas.width / 2, canvas.height / 2 + 80);
