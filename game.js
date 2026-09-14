@@ -13,7 +13,7 @@ const gameStats = {
     gamesPlayed: 0
 };
 
-const SAVE_INTERVAL = 10000; // Save every 10 seconds (in milliseconds)
+const SAVE_INTERVAL = 5000; // Save every 10 seconds (in milliseconds)
 let lastSaveTime = 0;
 
 // Load saved data on startup
